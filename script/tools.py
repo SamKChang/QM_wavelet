@@ -1,7 +1,10 @@
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-import qctoolkit as qtk
+try:
+  import qctoolkit as qtk
+except:
+  pass
 import numpy as np
 import copy
 import pkgutil
