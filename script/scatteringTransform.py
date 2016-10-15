@@ -1,12 +1,5 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-from future_builtins import *
-
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-try:
-    import qctoolkit as qtk
-except:
-    pass
 from numbers import Number
 import pickle
 import gzip
@@ -350,17 +343,13 @@ def stScore(data,
 
     vec = data['E']
 
-    try:
-        qtk.report("ML.tools.stScores setting", "\n",
-                   "alphas:", alphas, "\n", 
-                   "n_components_list:", n_components_list, "\n",
-                   "ols_components:", ols_components, "\n",
-                   "n_samples_list:", n_samples_list, "\n",
-                   "cross_validation:", cv, "\n",
-                   "cv_threads:", threads, "\n",
-                   "final score format: [alphas, gammas, samples, cv]")
-    except:
-        pass
+    print("alphas:", alphas, "\n", 
+          "n_components_list:", n_components_list, "\n",
+          "ols_components:", ols_components, "\n",
+          "n_samples_list:", n_samples_list, "\n",
+          "cross_validation:", cv, "\n",
+          "cv_threads:", threads, "\n",
+          "final score format: [alphas, gammas, samples, cv]")
 
     selected_components_list = [
       _get_best_components_from_folds(n_components, ols_components)\
