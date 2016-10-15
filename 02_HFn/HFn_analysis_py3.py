@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 #import qctoolkit as qtk
 #import qctoolkit.projects.Basel.p14_stml.scatteringTransform as qst
@@ -25,13 +25,17 @@ import time
 import glob
 
 def pload(fname):
-    with open(fname, 'rb') as pfile:
-        return pickle.load(pfile)
+    with open(fname, 'rb') as f:
+        u = pickle._Unpickler(f)
+        u.encoding = 'latin1'
+        data = u.load()
+        return data
+#        return pickle.load(f)
 
 
 # # Construct ST regression matrix and OLS path
 
-# In[2]:
+# In[ ]:
 
 signal_setting = {
     'padding': 10,
@@ -72,7 +76,7 @@ for fname in fname_list:
 np.savez('st_models_HFn.npz', st=st_matrix_list, E=E_list)
 
 
-# In[3]:
+# In[ ]:
 
 #st_model = np.load('../data/st_models_HFn.npz')
 #st_matrix_list = st_model['st']
@@ -93,26 +97,22 @@ for i in range(len(fname_list)):
     mae_list.append(MAE)
     components_list.append(components)
     
-np.savez('st_models_HFn_ols.npz', maes=mae_list, mses=mse_list, components_list = components_list)
+#np.savez('st_models_HFn_ols.npz', maes=mae_list, mses=mse_list, components_list = components_list)
 
 
 # # ST learning curves
 
-# In[5]:
+# In[ ]:
 
 #st_data = np.load('../data/st_models_HFn.npz')
 #ols_data = np.load('../data/st_models_HFn_ols.npz')
 data_list = [pload(f) for f in sorted(glob.glob('../data/data_m?.pkl'))]
-
-
-# In[7]:
-
 st_matrix_list = st_data['st']
 E_list = st_data['E']
 components_list = ols_data['components_list']
 
 n_samples_list = range(10,100,10) + range(100, 1000, 100)
-alphas = [1e-11]
+alphas = [1e-6]
 n_components_list = [1, 2, 5, 10, 20, 50, 100, 200, 300, 500]
 
 def getData_st(i):
@@ -140,28 +140,26 @@ for i in range(len(data_list)):
     st_scores.append(qst.stScore(data, **stsetting))
     
 st_scores = np.stack(st_scores)
-np.savez('st_scores.npz',
+np.savez('st_scores_HFn.npz',
          score = st_scores,
          n_samples = n_samples_list,
          components = n_components_list)
 
 
-# # KR learning curves
-
-# In[8]:
+# In[ ]:
 
 descriptors = {
     'distance': {'n': 1, 'sort':False},
-#    'distance_2': {'n': 2, 'sort':False},
-#    'coulomb_nosort_nocharge': {'n': -1, 'sort':False},
-#    'coulomb_nocharge': {'n': -1},
-#    'coulomb_nosort': {'n': -1, 'sort':False, 'nuclear_charges':True},
-#    'coulomb': {'n': -1, 'nuclear_charges':True},
-#    'coulomb_inv2': {'n': -2, 'nuclear_charges':True},
+    'distance_2': {'n': 2, 'sort':False},
+    'coulomb_nosort_nocharge': {'n': -1, 'sort':False},
+    'coulomb_nocharge': {'n': -1},
+    'coulomb_nosort': {'n': -1, 'sort':False, 'nuclear_charges':True},
+    'coulomb': {'n': -1, 'nuclear_charges':True},
+    'coulomb_inv2': {'n': -2, 'nuclear_charges':True},
 }
 
 
-# In[9]:
+# In[ ]:
 
 gammas = [.01, .02, .05, .1, .2, .5, 1]
 alphas = [1e-6, 1e-9, 1e-12]
@@ -184,7 +182,6 @@ for i in range(len(data_list)):
         'alphas': alphas,
         'n_samples_list': n_samples_list,
         'cv': cv,
-        'threads': 10,
     }
     for name, descriptor in descriptors.iteritems():
         if 'nuclear_charges' in descriptor and descriptor['nuclear_charges'] is not None:
@@ -194,13 +191,8 @@ for i in range(len(data_list)):
         scores = qtl.krrScore(data, **krrsetting)
         kr_scores.append(scores)
 kr_all_scores = np.stack(kr_all_scores)
-np.savez('st_scores_krr_rbf.npz',
-         score = kr_all_scores,
+np.savez('st_scores_krr_rbf_HFn.npz',
+         score = st_scores,
          n_samples = n_samples_list,
          gammas = gammas)
-
-
-# In[ ]:
-
-
 

@@ -77,15 +77,15 @@ def trimData(data, start, end):
     return data
 
 def loadData(fname, batch = (1, 1), return_range = False, size = None):
-#    # hack from http://stackoverflow.com/questions/11305790
-#    # /pickle-incompatability-of-numpy-arrays-between-python-2-and-3
-#    with open(fname, 'rb') as f:
-#        u = pickle._Unpickler(f)
-#        u.encoding = 'latin1'
-#        data = u.load()
-#        #data = p
-    with open(fname) as pkl:
-        data = pickle.load(pkl)
+    # hack from http://stackoverflow.com/questions/11305790
+    # /pickle-incompatability-of-numpy-arrays-between-python-2-and-3
+    with open(fname, 'rb') as f:
+        u = pickle._Unpickler(f)
+        u.encoding = 'latin1'
+        data = u.load()
+        #data = p
+#    with open(fname, 'rb') as pkl:
+#        data = pickle.load(pkl)
 
     data['E'] = np.array(data['E'])
     
