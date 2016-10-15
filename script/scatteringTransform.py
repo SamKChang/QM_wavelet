@@ -9,18 +9,12 @@ from numpy.polynomial.hermite_e import hermeval
 import matplotlib.pyplot as plt
 import pkgutil
 from scipy.special import binom
-fft_eggs_loader = pkgutil.find_loader('pyfftw')
-fft_found = fft_eggs_loader is not None
-if fft_found:
-    import pyfftw.interfaces.numpy_fft as fft
-skl_eggs_loader = pkgutil.find_loader('pyfftw')
-skl_found = skl_eggs_loader is not None
-if skl_found:
-    from sklearn.cross_validation import ShuffleSplit
-    from sklearn.cross_validation import cross_val_score
-    from sklearn.linear_model import Ridge
-    from sklearn.kernel_ridge import KernelRidge
-    from sklearn.externals.joblib import Parallel, delayed
+import pyfftw.interfaces.numpy_fft as fft
+from sklearn.cross_validation import ShuffleSplit
+from sklearn.cross_validation import cross_val_score
+from sklearn.linear_model import Ridge
+from sklearn.kernel_ridge import KernelRidge
+from sklearn.externals.joblib import Parallel, delayed
 
 def make_dirac_densities(x, z, grid_step=.01,
                          left_bound=None,

@@ -137,7 +137,11 @@ for i in range(len(data_list)):
         'cv': cv,
         'threads': 10,
     }
-    st_scores.append(qst.stScore(data, **stsetting))
+    print(stsetting)
+    scores = qst.stScore(data, **stsetting)
+    print(np.min(scores))
+    st_scores.append(scores)
+    
     
 st_scores = np.stack(st_scores)
 np.savez('st_scores_HFn.npz',
@@ -189,6 +193,7 @@ for i in range(len(data_list)):
         krrsetting['descriptor_setting'] = descriptor
         print(krrsetting)
         scores = qtl.krrScore(data, **krrsetting)
+        print(np.min(scores))
         kr_scores.append(scores)
 kr_all_scores = np.stack(kr_all_scores)
 np.savez('st_scores_krr_rbf_HFn.npz',
