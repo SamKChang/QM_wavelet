@@ -1,10 +1,5 @@
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-
-try:
-  import qctoolkit as qtk
-except:
-  pass
 import numpy as np
 import copy
 import pkgutil
@@ -15,40 +10,6 @@ if skl_found:
   from sklearn.cross_validation import cross_val_score
   from sklearn.linear_model import Ridge
   from sklearn.kernel_ridge import KernelRidge
-
-def coulomb_matrix(mol, n = -1, size = 0, 
-                   sort = True, nuclear_charges = True):
-  if size == 0:
-    size = mol.N
-  if size < mol.N:
-    qtk.exit("matrix size too small")
-  positions = mol.R
-  if nuclear_charges:
-    charges = mol.Z
-  else:
-    charges = np.ones(mol.N)
-  differences = positions[:, np.newaxis, :] \
-              - positions[np.newaxis, :, :]
-  distances = np.sqrt((differences ** 2).sum(axis=-1))
-  distances[distances == 0] = np.nan # replace 0 for division
-  if n != 0:
-    invR = (distances ** n)
-  else:
-    invR = distances
-  invR[np.isnan(invR)] = 0 # change 0 back for getting diagonal
-  diag_mask = (invR == 0).astype(int)
-  charge_mask_Zij = charges[:, np.newaxis] \
-                  * charges[np.newaxis, :]
-  charge_mask_2p4 = 0.5 * ((charges[:, np.newaxis] \
-                            * charges[np.newaxis, :]) \
-                            * diag_mask) ** 1.2
-  cm = invR * charge_mask_Zij + charge_mask_2p4
-  if sort:
-    ind = np.argsort(cm.sum(axis=-1))
-    cm = cm[:, ind][ind]
-  out = np.zeros([size, size])
-  out[:cm.shape[0], :cm.shape[1]] = cm
-  return out
 
 def coulomb_matrices(positions, nuclear_charges = None, 
                      n = -1, sort=True):
@@ -121,17 +82,13 @@ def krrScore(data,
                       test_size=.1, 
                       random_state=42)
 
-  try:
-    qtk.report("ML.tools.krrScores setting", "\n",
-               "kernel:", kernel, "\n",
-               "alphas:", alphas, "\n", 
-               "gammas:", gammas, "\n",
-               "n_samples_list:", n_samples_list, "\n",
-               "cross_validation:", cv, "\n",
-               "cv_threads:", threads, "\n",
-               "final score format: [alphas, gammas, samples, cv]")
-  except:
-    pass
+  print("kernel:", kernel, "\n",
+        "alphas:", alphas, "\n", 
+        "gammas:", gammas, "\n",
+        "n_samples_list:", n_samples_list, "\n",
+        "cross_validation:", cv, "\n",
+        "cv_threads:", threads, "\n",
+        "final score format: [alphas, gammas, samples, cv]")
       
   all_scores = []
   for alpha in alphas:
