@@ -53,34 +53,34 @@ filter_setting = {
 fname_list = sorted(glob.glob('../data/data_m?.pkl'))
 
 
-# In[ ]:
-
-st_matrix_list = []
-E_list = []
-
-for fname in fname_list:
-    print("processing %s" % fname)
-
-    ti = time.time()
-    st_matrix, E = qst.stModel_1d(
-        fname, 
-        batch = 5,
-        signal_setting = signal_setting, 
-        filter_setting = filter_setting
-    )
-    tf = time.time()
-    print("time: %f" % (tf - ti))
-    st_matrix_list.append(st_matrix)
-    E_list.append(E)
-
-np.savez('st_models_HFn.npz', st=st_matrix_list, E=E_list)
-
-
-# In[ ]:
-
-#st_model = np.load('../data/st_models_HFn.npz')
-#st_matrix_list = st_model['st']
-#E_list = st_model['E']
+### In[ ]:
+##
+##st_matrix_list = []
+##E_list = []
+##
+##for fname in fname_list:
+##    print("processing %s" % fname)
+##
+##    ti = time.time()
+##    st_matrix, E = qst.stModel_1d(
+##        fname, 
+##        batch = 5,
+##        signal_setting = signal_setting, 
+##        filter_setting = filter_setting
+##    )
+##    tf = time.time()
+##    print("time: %f" % (tf - ti))
+##    st_matrix_list.append(st_matrix)
+##    E_list.append(E)
+##
+##np.savez('st_models_HFn.npz', st=st_matrix_list, E=E_list)
+##
+##
+### In[ ]:
+##
+st_model = np.load('st_models_HFn.npz')
+st_matrix_list = st_model['st']
+E_list = st_model['E']
 
 
 # In[ ]:
@@ -97,7 +97,7 @@ for i in range(len(fname_list)):
     mae_list.append(MAE)
     components_list.append(components)
     
-#np.savez('st_models_HFn_ols.npz', maes=mae_list, mses=mse_list, components_list = components_list)
+np.savez('st_models_HFn_ols.npz', maes=mae_list, mses=mse_list, components_list = components_list)
 
 
 # # ST learning curves
@@ -105,11 +105,14 @@ for i in range(len(fname_list)):
 # In[ ]:
 
 #st_data = np.load('../data/st_models_HFn.npz')
+#st_data = np.load('st_models_HFn.npz')
+#st_matrix_list = st_data['st']
+#E_list = st_data['E']
 #ols_data = np.load('../data/st_models_HFn_ols.npz')
+#ols_data = np.load('st_models_HFn_ols.npz')
+#components_list = ols_data['components_list']
+
 data_list = [pload(f) for f in sorted(glob.glob('../data/data_m?.pkl'))]
-st_matrix_list = st_data['st']
-E_list = st_data['E']
-components_list = ols_data['components_list']
 
 n_samples_list = range(10,100,10) + range(100, 1000, 100)
 alphas = [1e-6]
