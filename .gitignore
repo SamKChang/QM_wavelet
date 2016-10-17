@@ -1,0 +1,6 @@
+**.pyc
+**.swp
+*.ipynb_checkpoints*
+!(data)/*.npz
+!(data)/*.npy
+!(data)/*.pkl
