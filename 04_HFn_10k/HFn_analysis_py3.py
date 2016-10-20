@@ -50,7 +50,7 @@ filter_setting = {
     #'scales': np.arange(6,8),
     'wavelet': qst.gabor_k,
 }
-fname_list = sorted(glob.glob('../data/data_m?.pkl'))
+fname_list = sorted(glob.glob('../data/data_m?_10k.pkl'))
 
 
 ## In[ ]:
@@ -64,7 +64,7 @@ fname_list = sorted(glob.glob('../data/data_m?.pkl'))
 #    ti = time.time()
 #    st_matrix, E = qst.stModel_1d(
 #        fname, 
-#        batch = 5,
+#        batch = 40,
 #        signal_setting = signal_setting, 
 #        filter_setting = filter_setting
 #    )
@@ -83,8 +83,8 @@ st_matrix_list = st_model['st']
 E_list = st_model['E']
 
 
-# In[ ]:
-
+## In[ ]:
+#
 #mae_list = []
 #mse_list = []
 #components_list = []
@@ -98,23 +98,26 @@ E_list = st_model['E']
 #    components_list.append(components)
 #    
 #np.savez('st_models_HFn_ols.npz', maes=mae_list, mses=mse_list, components_list = components_list)
-#
+
 
 # # ST learning curves
 
 # In[ ]:
 
-st_data = np.load('../data/st_models_HFn.npz')
-st_data = np.load('st_models_HFn.npz')
-st_matrix_list = st_data['st']
-E_list = st_data['E']
-ols_data = np.load('../data/st_models_HFn_ols.npz')
-ols_data = np.load('st_models_HFn_ols.npz')
-components_list = ols_data['components_list']
+#st_data = np.load('../data/st_models_HFn.npz')
+#st_data = np.load('st_models_HFn.npz')
+#st_matrix_list = st_data['st']
+#E_list = st_data['E']
+#ols_data = np.load('../data/st_models_HFn_ols.npz')
+#ols_data = np.load('st_models_HFn_ols.npz')
+#components_list = ols_data['components_list']
 
-data_list = [pload(f) for f in sorted(glob.glob('../data/data_m?.pkl'))]
+data_list = [pload(f) for f in sorted(glob.glob('../data/data_m?_10k.pkl'))]
 
-n_samples_list = list(range(10,100,10)) + list(range(100, 1000, 100))
+#n_samples_list = list(range(10,100,10)) + list(range(100, 1000, 100))
+n_samples_list = list(range(10, 100, 10)) + list(range(100, 1000, 100)) + \
+  list(range(1000, 3000, 200)) + list(range(3000, 5000, 500)) + list(range(5000, 7500, 1000)) +\
+  list(range(8000, 11000, 2000))
 alphas = [1e-6]
 n_components_list = [1, 2, 5, 10, 20, 50, 100, 200, 300, 500]
 
@@ -124,8 +127,8 @@ def getData_kr(i):
     return data_list[i]
 
 
-## In[ ]:
-#
+### In[ ]:
+##
 #st_scores = []
 #for i in range(len(data_list)):
 #    data, st_matrix, components = getData_st(i)
@@ -151,9 +154,9 @@ def getData_kr(i):
 #         score = st_scores,
 #         n_samples = n_samples_list,
 #         components = n_components_list)
-
-
-# In[ ]:
+#
+#
+## In[ ]:
 
 descriptors = {
     'distance': {'n': 1, 'sort':False},
@@ -171,8 +174,7 @@ descriptors = {
 gammas = [.01, .02, .05, .1, .2, .5, 1]
 alphas = [1e-11]
 n_components_list = [1, 2, 5, 10, 20, 50, 100, 200, 300, 500]
-n_samples_list = list(range(10,100,10)) + list(range(100, 1000, 100))
-#n_samples_list = list(range(10, 100, 10)) +     list(range(100, 1000, 100)) +     list(range(1000, 3000, 200)) +     list(range(3000, 5000, 500)) +     list(range(5000, 7500, 1000))
+n_samples_list = list(range(10, 100, 10)) +     list(range(100, 1000, 100)) +     list(range(1000, 3000, 200)) +     list(range(3000, 5000, 500)) +     list(range(5000, 7500, 1000))
 
 
 # In[ ]:
@@ -185,7 +187,7 @@ for i in range(len(data_list)):
     E = np.array(data['E'])
     cv = ShuffleSplit(len(E), n_iter=10, test_size=.1, random_state=42)
     krrsetting = {
-        'kernel': 'rbf',
+        'kernel': 'laplacian',
         'gammas': gammas,
         'alphas': alphas,
         'n_samples_list': n_samples_list,
@@ -200,7 +202,7 @@ for i in range(len(data_list)):
         print(np.min(scores))
         kr_scores.append(scores)
 kr_all_scores = np.stack(kr_all_scores)
-np.savez('st_scores_krr_rbf_HFn.npz',
+np.savez('st_scores_krr_HFn.npz',
          score = kr_all_scores,
          n_samples = n_samples_list,
          gammas = gammas)
