@@ -158,20 +158,30 @@ def getData_kr(i):
 #
 ## In[ ]:
 
-descriptors = {
-    'distance': {'n': 1, 'sort':False},
-    'distance_2': {'n': 2, 'sort':False},
-    'coulomb_nosort_nocharge': {'n': -1, 'sort':False},
-    'coulomb_nocharge': {'n': -1},
-    'coulomb_nosort': {'n': -1, 'sort':False, 'nuclear_charges':True},
-    'coulomb': {'n': -1, 'nuclear_charges':True},
-    'coulomb_inv2': {'n': -2, 'nuclear_charges':True},
-}
+descriptors = [
+    {'n': 1, 'sort':False},
+    {'n': 2, 'sort':False},
+    {'n': -1, 'sort':False},
+    {'n': -1},
+    {'n': -1, 'sort':False, 'nuclear_charges':True},
+    {'n': -1, 'nuclear_charges':True},
+    {'n': -2, 'nuclear_charges':True},
+]
+#descriptors = {
+#    'distance': {'n': 1, 'sort':False},
+#    'distance_2': {'n': 2, 'sort':False},
+#    'coulomb_nosort_nocharge': {'n': -1, 'sort':False},
+#    'coulomb_nocharge': {'n': -1},
+#    'coulomb_nosort': {'n': -1, 'sort':False, 'nuclear_charges':True},
+#    'coulomb': {'n': -1, 'nuclear_charges':True},
+#    'coulomb_inv2': {'n': -2, 'nuclear_charges':True},
+#}
 
 
 # In[ ]:
 
-gammas = [.01, .02, .05, .1, .2, .5, 1]
+#gammas = [.01, .02, .05, .1, .2, .5, 1]
+gammas = [1E-12, 1E-9, 1E-6, 1E-3, 1E-1]
 alphas = [1e-11]
 n_components_list = [1, 2, 5, 10, 20, 50, 100, 200, 300, 500]
 n_samples_list = list(range(10, 100, 10)) +     list(range(100, 1000, 100)) +     list(range(1000, 3000, 200)) +     list(range(3000, 5000, 500)) +     list(range(5000, 7500, 1000))
@@ -181,28 +191,45 @@ n_samples_list = list(range(10, 100, 10)) +     list(range(100, 1000, 100)) +   
 
 kr_all_scores = []
 for i in range(len(data_list)):
-    kr_scores = []
-    kr_all_scores.append(kr_scores)
     data = getData_kr(i)
     E = np.array(data['E'])
     cv = ShuffleSplit(len(E), n_iter=10, test_size=.1, random_state=42)
-    krrsetting = {
-        'kernel': 'laplacian',
-        'gammas': gammas,
-        'alphas': alphas,
-        'n_samples_list': n_samples_list,
-        'cv': cv,
-    }
-    for name, descriptor in descriptors.items():
-        if 'nuclear_charges' in descriptor and descriptor['nuclear_charges'] is not None:
-            descriptor['nuclear_charges'] = data['Z']
-        krrsetting['descriptor_setting'] = descriptor
-        print(krrsetting)
-        scores = qtl.krrScore(data, **krrsetting)
-        print(np.min(scores))
-        kr_scores.append(scores)
+    scores = qtl.krrScore(data, 
+               kernels = 'laplacian',
+               gammas = gammas,
+               alphas = alphas,
+               n_samples_list = n_samples_list,
+               cv = cv,
+               descriptor_settings = descriptors,
+             )
+    kr_all_scores.append(kr_all_scores)
+    
+
+#kr_all_scores = []
+#for i in range(len(data_list)):
+#    kr_scores = []
+#    kr_all_scores.append(kr_scores)
+#    data = getData_kr(i)
+#    E = np.array(data['E'])
+#    cv = ShuffleSplit(len(E), n_iter=10, test_size=.1, random_state=42)
+#    krrsetting = {
+#        'kernel': 'laplacian',
+#        'gammas': gammas,
+#        'alphas': alphas,
+#        'n_samples_list': n_samples_list,
+#        'cv': cv,
+#    }
+#    for name, descriptor in descriptors.items():
+#        if 'nuclear_charges' in descriptor and descriptor['nuclear_charges'] is not None:
+#            descriptor['nuclear_charges'] = data['Z']
+#        krrsetting['descriptor_setting'] = descriptor
+#        print(krrsetting)
+#        scores = qtl.krrScore(data, **krrsetting)
+#        print(np.min(scores))
+#        kr_scores.append(scores)
+
 kr_all_scores = np.stack(kr_all_scores)
-np.savez('st_scores_krr_HFn.npz',
+np.savez('st_scores_krr_HFn_lps.npz',
          score = kr_all_scores,
          n_samples = n_samples_list,
          gammas = gammas)
