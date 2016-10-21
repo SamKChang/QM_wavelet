@@ -1,6 +1,10 @@
 **.pyc
 **.swp
 *.ipynb_checkpoints*
-!(data)/*.npz
-!(data)/*.npy
-!(data)/*.pkl
+**.npz
+**.npy
+**.pkl
+!/data/*
+#!data/*.npz
+#!data/*.npy
+#!data/*.pkl
