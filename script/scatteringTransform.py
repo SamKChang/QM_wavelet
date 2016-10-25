@@ -16,53 +16,38 @@ from sklearn.linear_model import Ridge
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.externals.joblib import Parallel, delayed
 
-def make_dirac_densities(x, z, grid_step=.01,
-                         left_bound=None,
-                         right_bound=None,
-                         padding=0.,
-                         dirac_width=0.001,
-                         keep_integral='l1'):
+from cheml_scattering.density import get_valence, make_gaussian_densities
+from cheml_scattering.wavelets import gabor_derivative
+
+def get_1d_grid(grid_step=.01, 
+                left_bound=None, 
+                right_bound=None,
+                padding=0.):
     if left_bound is None:
         left_bound = x.min() - padding
     if right_bound is None:
         right_bound = x.max() + padding
     
     grid = np.mgrid[left_bound:right_bound + grid_step:grid_step]
-    distances = (x[..., np.newaxis] - grid[np.newaxis, np.newaxis]) ** 2
-    gaussians = np.exp(-.5 * distances / dirac_width ** 2) / np.sqrt(2 * np.pi * dirac_width ** 2)
-    if keep_integral == 'l1':
-        gaussian_integrals = gaussians.sum(axis=2)
-        gaussians /= gaussian_integrals[..., np.newaxis]
-    elif keep_integral == 'l2':
-        norm = np.sqrt((gaussians ** 2).sum(axis=2))
-        gaussians /= norm[..., np.newaxis]
-    densities = (gaussians * z[..., np.newaxis]).sum(axis=1)
-    
+    return grid
+
+def make_dirac_densities(x, z, grid_step=.01,
+                         left_bound=None,
+                         right_bound=None,
+                         padding=0.,
+                         dirac_width=0.001,
+                         keep_integral='l1'):
+
+    grid = get_1d_grid(grid_step, left_bound, right_bound, padding)
+
+    grid_new = grid[np.newaxis, :]
+    x_new = x[:,:,np.newaxis]
+    densities = make_gaussian_densities(grid_new, x_new[:1], z[:1], sigma=dirac_width)
+
     return densities
 
-def get_valence(Z):
-    shells = np.array([0, 2] + [8.] * 10)
-    shellsc = np.cumsum(shells)
-    Z_ = np.atleast_1d(Z).ravel()
-    diffs = Z_ - shellsc[:, np.newaxis]
-    #print(diffs)
-    diffs[diffs < 0] = np.nan
-    values = np.nanmin(diffs, axis=0).astype(int)
-    if isinstance(Z, Number):
-        return values[0]
-    return values.reshape(Z.shape)
-
 def gabor_k(k, grid_x, xi0=np.pi * 3 / 4, sigma0=.5, scale=0):
-    xi = xi0 / 2 ** scale
-    sigma = sigma0 * 2 ** scale
-    k_choose_j = binom(k, np.arange(k + 1))
-    minus_one_power = (-1) ** np.arange(k + 1)
-    i_xi_power = (1j * xi * sigma) ** (k - np.arange(k + 1))
-    herm_coef = k_choose_j * minus_one_power * i_xi_power
-    hermite_eval = hermeval(grid_x / sigma, herm_coef)
-    gauss = np.exp(-.5 * (grid_x/sigma) ** 2) / np.sqrt(2 * np.pi * sigma ** 2) / sigma ** k
-    wave = np.exp(1j * xi * grid_x)
-    return hermite_eval * gauss * wave
+    return gabor_derivative(grid_x, k, xi0, sigma0, scale)
 
 def trimData(data, start, end):
     data_all = copy.deepcopy(data)
@@ -181,7 +166,6 @@ def stCoefs_1d(signals, filters, second_layer=False, parallel = False, block_siz
         filter_length = filters.shape[-1]
         filter_shape = filters.shape[:-1]
         filter_size = np.prod(filter_shape)
-        #filter_size = functools.reduce(lambda x, y: x * y, filter_shape)
         filters.shape = (filter_size, filter_length)
         print("%d features" % (signal_size * filter_size / signal_shape[0]))
 
@@ -203,13 +187,11 @@ def stCoefs_1d(signals, filters, second_layer=False, parallel = False, block_siz
         n_scale_new = n_scale * (n_scale - 1) // 2
         new_signal_shape.extend([n_scale_new, signal_length])
         feature_size = np.prod(new_signal_shape[1:-1])
-        #conv_size = np.prod(new_signal_shape[:-1])
         new_singal_shape = tuple(new_signal_shape)
         print("%d features" % feature_size)
         
         f_signals = fft.fft(np.abs(signals), axis = -1)
         f_filters = fft.fft(fft.ifftshift(filters, axes=(-1,)), axis = -1)
-        #f_conv = np.zeros(new_signal_shape, dtype=np.complex64)
         f_conv = np.zeros(new_signal_shape, dtype=np.complex)
         
         counter = 0
@@ -239,8 +221,6 @@ def stCoefs_1d(signals, filters, second_layer=False, parallel = False, block_siz
         
         signal_shape = signal_shape[:-1]
         filter_shape = filter_shape[:-1]
-        #f_conv.shape = (conv_size, signal_length)
-        #f_conv = np.zeros(signal_size, filter_size, signal_length)
 
     if parallel:
         filtered = Parallel(n_jobs=-1)(delayed_ifft(f_conv[i:i + block_size]) 
@@ -249,13 +229,10 @@ def stCoefs_1d(signals, filters, second_layer=False, parallel = False, block_siz
     else:
         filtered = fft.ifft(f_conv)
     
-    #del f_conv
     if not second_layer:
         filtered.shape = signal_shape + filter_shape + (signal_length,)
 
     return filtered
-    #return np.abs(filtered).astype('float32')
-    #return np.abs(filtered)
 
 def regressionMatrix(*filtered_list, **kwargs):
     if 'normalize' in kwargs:
@@ -276,24 +253,6 @@ def regressionMatrix(*filtered_list, **kwargs):
             l1 /= np.sqrt((l1 ** 2).sum(0))
             l2 /= np.sqrt((l2 ** 2).sum(0))
         features.append(np.hstack([l1, l2]))
-
-#        l1_list = np.atleast_2d()
-#        l2_list = np.atleast_2d()
-#        for i in range(shape):
-#            # integrate over signal length
-#            l1 = np.abs(filtered_reshaped[:, i, :]).sum(-1)
-#            # normalize over all samples
-#            l2 = (np.abs(filtered_reshaped[:, i, :]) ** 2).sum(-1)
-#            if normalize:
-#                l1 /= np.sqrt((l1 ** 2).sum(0))
-#                l2 /= np.sqrt((l2 ** 2).sum(0))
-#            try:
-#                l1_list = np.hstack([l1_list, l1[:, np.newaxis]])
-#                l2_list = np.hstack([l2_list, l2[:, np.newaxis]])
-#            except:
-#                l1_list = l1[:, np.newaxis]
-#                l2_list = l2[:, np.newaxis]
-#        features.append(np.hstack([l1_list, l2_list]))
 
     return np.hstack(features)
 
