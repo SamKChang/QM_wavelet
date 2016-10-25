@@ -1,5 +1,6 @@
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
+from collections import OrderedDict
 import numpy as np
 import copy
 import pkgutil
@@ -51,23 +52,26 @@ def coulomb_matrices(positions, nuclear_charges = None,
   return out
 
 def krrScore(data, 
-             n_samples_list = None,
+             n_samples = None,
              kernels = ['laplacian'], 
              cv = None, 
              threads = 1, 
              alphas = [1e-11],
              gammas = [1e-5],
-             descriptors = [coulomb_matrices],
-             descriptor_settings = [{}],
+             descriptors = OrderedDict({
+               coulomb_matrices: {'nuclear_charges': True}
+             }),
+             return_key = False,
+             report = False,
             ):
   """
   return scores in the format of [alphas, gammas, samples, cv]
   """
 
   E = data['E']
-
-  if n_samples_list is None:
-    n_samples_list = [
+	
+  if n_samples is None:
+    n_samples = [
       int(len(E) / 10.),
       int(len(E) / 5.),
       int(len(E) / 2.),
@@ -78,82 +82,89 @@ def krrScore(data,
       param = [param]
     return param
 
-  descriptors = listWrap(descriptors)
+  #descriptors = listWrap(descriptors)
   alphas = listWrap(alphas)
   gammas = listWrap(gammas)
+  n_samples = listWrap(n_samples)
 
-  if type(descriptor_settings) is not list:
-    descriptor_settings = [descriptor_settings]
+  #if type(descriptor_settings) is not list:
+  #  descriptor_settings = [descriptor_settings]
+  if not isinstance(descriptors, OrderedDict):
+    if descriptors is None:
+      descriptors = OrderedDict({None:None})
+    elif type(descriptors) is type(coulomb_matrices):
+      descriptors = OrderedDict({descriptors: {}})
+    elif type(descriptors) is list \
+    and type(descriptors[0]) is tuple:
+      descriptors = OrderedDict(descriptors)
   if type(kernels) is not list:
     kernels = [kernels]
-  
+
   if cv is None:
     cv = ShuffleSplit(len(E), 
                       n_iter=5,
-                      test_size=.1, 
-                      random_state=42)
+                      test_size=.1)
   try:
     cv_fold = cv.n_iter
   except:
     cv_fold = len(cv)
 
-  param_names = np.array([
-    'descriptors', 
-    'descriptor_settings',
-    'kernels', 
-    'alphas', 
-    'gammas',
-    'samples',
-    'cv_folds',
-  ])
-  param_len = np.array([
-    len(descriptors), 
-    len(descriptor_settings), 
-    len(kernels), 
-    len(alphas), 
-    len(gammas),
-    len(n_samples_list),
-    cv_fold,
-  ])
-  out_format = param_names[param_len > 1].tolist()
+  input_key = OrderedDict()
+  input_key['descriptors'] = descriptors
+  input_key['kernels'] = kernels
+  input_key['alphas'] = alphas
+  input_key['gammas'] = gammas
+  input_key['n_samples'] = n_samples
+  input_key['cv_fold'] = cv_fold
 
-  print("ML.tools.krrScores setting", "\n",
-        "kernel:", kernels, "\n",
-        "alphas:", alphas, "\n", 
-        "gammas:", gammas, "\n",
-        "n_samples_list:", n_samples_list, "\n",
-        "cv_threads:", threads, "\n",
-        "cv_fold:", cv_fold, "\n",
-        "final score format: ", out_format)
+  output_key = OrderedDict({})
+  for k, v in input_key.items():
+    if k == 'cv_fold':
+      if cv_fold > 1:
+        output_key[k] = cv_fold
+    else:
+      if len(v) > 1:
+        output_key[k] = v
+
+  if report:
+    print("ML.tools.krrScores setting", "\n",
+          "kernel:", kernels, "\n",
+          "alphas:", alphas, "\n", 
+          "gammas:", gammas, "\n",
+          "n_samples:", n_samples, "\n",
+          "cv_threads:", threads, "\n",
+          "cv_fold:", cv_fold, "\n",
+          "final score format: ", list(output_key.keys()))
 
   all_scores = []
-  for descriptor in descriptors:
+  for descriptor, dsetting in descriptors.items():
     descriptor_scores = []
     all_scores.append(descriptor_scores)
-    for dsetting in descriptor_settings:
-      dsetting_scores = []
-      descriptor_scores.append(dsetting_scores)
+    if descriptor is not None:
       dsetting = copy.deepcopy(dsetting)
-      if 'nuclear_charges' in dsetting and dsetting['nuclear_charges']:
+      if dsetting is None:
+        dsetting = {}
+      if 'nuclear_charges' in dsetting\
+      and dsetting['nuclear_charges']:
         dsetting['nuclear_charges'] = data['Z']
-      if descriptor is not None:
-        matrix_list = descriptor(data['xyz'], **dsetting)
-      else:
-        matrix_list = data['samples']
-  
-      for kernel in kernels:
-        kernel_scores = []
-        dsetting_scores.append(kernel_scores)
-        for alpha in alphas:
-          alpha_scores = []
-          kernel_scores.append(alpha_scores)
-          for gamma in gammas:
-            gamma_scores = []
-            alpha_scores.append(gamma_scores)
-            kernel_ridge = KernelRidge(alpha=alpha, 
-                                       gamma=gamma, 
-                                       kernel=kernel)
-            for n_samples in n_samples_list:
+      matrix_list = descriptor(data['xyz'], **dsetting)
+    else:
+      matrix_list = data['X']
+
+    for kernel in kernels:
+      kernel_scores = []
+      descriptor_scores.append(kernel_scores)
+      for alpha in alphas:
+        alpha_scores = []
+        kernel_scores.append(alpha_scores)
+        for gamma in gammas:
+          gamma_scores = []
+          alpha_scores.append(gamma_scores)
+          kernel_ridge = KernelRidge(alpha=alpha, 
+                                     gamma=gamma, 
+                                     kernel=kernel)
+          for n_sample in n_samples:
+            if report:
               print(
                 "processing:", "\n",
                 "descriptor =",  descriptor, "\n",
@@ -161,23 +172,27 @@ def krrScore(data,
                 "kernel =",  kernel, "\n",
                 "alpha =",  alpha, "\n",
                 "gamma =",  gamma, "\n",
-                "n_samples = ", n_samples
+                "n_sample = ", n_sample
               )
-              cv_ = [(train[:n_samples], test) for train, test in cv]
-              scores = cross_val_score(kernel_ridge, 
-                                       matrix_list.reshape(
-                                         len(matrix_list), -1
-                                       ), 
-                                       E, 
-                                       cv=cv_, 
-                                       n_jobs=threads, 
-                                       scoring='mean_absolute_error')
-              gamma_scores.append(scores)
+            cv_ = [(train[:n_sample], test) for train, test in cv]
+            scores = cross_val_score(kernel_ridge, 
+                                     matrix_list.reshape(
+                                       len(matrix_list), -1
+                                     ), 
+                                     E, 
+                                     cv=cv_, 
+                                     n_jobs=threads, 
+                                     scoring='mean_absolute_error')
+            gamma_scores.append(scores)
+            if report:
               print(" best score:", np.min(np.abs(scores)), "\n")
-              
-  # [alphas, gammas, samples, cv]
-  print("final format:", out_format)
-  return np.squeeze(-np.array(all_scores))
+   
+  if report:           
+    print("final format:", output_key)
+  if return_key:
+    return np.squeeze(-np.array(all_scores)), output_key
+  else:
+    return np.squeeze(-np.array(all_scores))
 
 def pack(data_list, **kwargs):
   if isinstance(data_list[0], qtk.Molecule):
