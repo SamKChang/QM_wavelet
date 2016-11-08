@@ -1,16 +1,8 @@
-
-# coding: utf-8
-
-# In[ ]:
-
-#import qctoolkit as qtk
-#import qctoolkit.projects.Basel.p14_stml.scatteringTransform as qst
-#import qctoolkit.projects.Basel.p14_stml.estimators as qes
-
 import sys
 import os
 script_path = os.path.join(os.path.split(os.getcwd())[0], 'script')
 sys.path.insert(0, script_path)
+import cheml
 import scatteringTransform as qst
 import estimators as qes
 import tools as qtl
@@ -25,17 +17,7 @@ import time
 import glob
 
 def pload(fname):
-    with open(fname, 'rb') as f:
-        u = pickle._Unpickler(f)
-        u.encoding = 'latin1'
-        data = u.load()
-        return data
-#        return pickle.load(f)
-
-
-# # Construct ST regression matrix and OLS path
-
-# In[ ]:
+    cheml.datasets._open_HF_pickle(fname)
 
 signal_setting = {
     'padding': 10,
@@ -44,43 +26,46 @@ signal_setting = {
 }
 
 filter_setting = {
-    'derivatives': np.array([0, 1, 2]),
-    'scales': np.arange(3, 10),
-    #'derivatives': np.array([0,1]),
-    #'scales': np.arange(6,8),
+    #'derivatives': np.array([0, 1, 2]),
+    #'scales': np.arange(3, 10),
+    'derivatives': np.array([0,1]),
+    'scales': np.arange(6,8),
     'wavelet': qst.gabor_k,
 }
-fname_list = sorted(glob.glob('../data/data_m?.pkl'))
+fname_list = sorted(glob.glob('../data/data_m3.pkl'))
 
 
 ## In[ ]:
 #
-#st_matrix_list = []
-#E_list = []
-#
-#for fname in fname_list:
-#    print("processing %s" % fname)
-#
-#    ti = time.time()
-#    st_matrix, E = qst.stModel_1d(
-#        fname, 
-#        batch = 5,
-#        signal_setting = signal_setting, 
-#        filter_setting = filter_setting
-#    )
-#    tf = time.time()
-#    print("time: %f" % (tf - ti))
-#    st_matrix_list.append(st_matrix)
-#    E_list.append(E)
+st_matrix_list = []
+E_list = []
+
+for fname in fname_list:
+    print("processing %s" % fname)
+
+    ti = time.time()
+    st_matrix, E = qst.stModel_1d(
+        fname, 
+        batch = 5,
+        signal_setting = signal_setting, 
+        filter_setting = filter_setting
+    )
+    tf = time.time()
+    print("time: %f" % (tf - ti))
+    st_matrix_list.append(st_matrix)
+    E_list.append(E)
+
+print(np.sum(np.stack(st_matrix_list)))
+print(st_matrix_list)
 #
 #np.savez('st_models_HFn.npz', st=st_matrix_list, E=E_list)
 
 
 # In[ ]:
 
-st_model = np.load('st_models_HFn.npz')
-st_matrix_list = st_model['st']
-E_list = st_model['E']
+#st_model = np.load('st_models_HFn.npz')
+#st_matrix_list = st_model['st']
+#E_list = st_model['E']
 
 
 # In[ ]:
