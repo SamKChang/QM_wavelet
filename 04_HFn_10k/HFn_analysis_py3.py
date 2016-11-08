@@ -1,12 +1,3 @@
-
-# coding: utf-8
-
-# In[ ]:
-
-#import qctoolkit as qtk
-#import qctoolkit.projects.Basel.p14_stml.scatteringTransform as qst
-#import qctoolkit.projects.Basel.p14_stml.estimators as qes
-
 import sys
 import os
 script_path = os.path.join(os.path.split(os.getcwd())[0], 'script')
@@ -160,12 +151,13 @@ def getData_kr(i):
 
 descriptors = [
     {'n': 1, 'sort':False},
-    {'n': 2, 'sort':False},
-    {'n': -1, 'sort':False},
-    {'n': -1},
+#    {'n': 2, 'sort':False},
+#    {'n': -1, 'sort':False},
+#    {'n': -1},
     {'n': -1, 'sort':False, 'nuclear_charges':True},
-    {'n': -1, 'nuclear_charges':True},
-    {'n': -2, 'nuclear_charges':True},
+#    {'n': -1, 'nuclear_charges':True},
+#    {'n': -2, 'nuclear_charges':True},
+    {'n': -6, 'sort':False, 'nuclear_charges':True},
 ]
 #descriptors = {
 #    'distance': {'n': 1, 'sort':False},
@@ -181,7 +173,8 @@ descriptors = [
 # In[ ]:
 
 #gammas = [.01, .02, .05, .1, .2, .5, 1]
-gammas = [1E-12, 1E-9, 1E-6, 1E-3, 1E-1]
+#gammas = [1E-12, 1E-9, 1E-6, 1E-3, 1E-1]
+gammas = [1E-8, 1E-4, 1E-1]
 alphas = [1e-11]
 n_components_list = [1, 2, 5, 10, 20, 50, 100, 200, 300, 500]
 n_samples_list = list(range(10, 100, 10)) +     list(range(100, 1000, 100)) +     list(range(1000, 3000, 200)) +     list(range(3000, 5000, 500)) +     list(range(5000, 7500, 1000))
@@ -198,11 +191,21 @@ for i in range(len(data_list)):
                kernels = 'laplacian',
                gammas = gammas,
                alphas = alphas,
-               n_samples_list = n_samples_list,
+               n_samples = n_samples_list,
                cv = cv,
-               descriptor_settings = descriptors,
+               descriptors = descriptors,
              )
-    kr_all_scores.append(kr_all_scores)
+    kr_all_scores.append(scores)
+
+    # step-wise backup
+    try:
+        tmp = np.stack(kr_all_scores)
+        np.savez('st_scores_krr_HFn_lps.npz',
+                 score = tmp,
+                 n_samples = n_samples_list,
+                 gammas = gammas)
+    except Exception as e:
+        print("save attempt failed with err: %s" % str(e))
     
 
 #kr_all_scores = []

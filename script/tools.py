@@ -58,9 +58,10 @@ def krrScore(data,
              threads = 1, 
              alphas = [1e-11],
              gammas = [1e-5],
-             descriptors = OrderedDict({
-               coulomb_matrices: {'nuclear_charges': True}
-             }),
+             descriptors = [{
+               'descriptor_function': coulomb_matrices,
+               'nuclear_charges': True
+             }],
              return_key = False,
              report = False,
             ):
@@ -137,9 +138,14 @@ def krrScore(data,
           "final score format: ", list(output_key.keys()))
 
   all_scores = []
-  for descriptor, dsetting in descriptors.items():
+  #for descriptor, dsetting in descriptors.items():
+  for dsetting in descriptors:
     descriptor_scores = []
     all_scores.append(descriptor_scores)
+    if 'descriptor_function' in dsetting:
+      descriptor = dsetting.pop('descriptor_function')
+    else:
+      descriptor = coulomb_matrices
     if descriptor is not None:
       dsetting = copy.deepcopy(dsetting)
       if dsetting is None:
@@ -150,6 +156,7 @@ def krrScore(data,
       matrix_list = descriptor(data['xyz'], **dsetting)
     else:
       matrix_list = data['X']
+
 
     for kernel in kernels:
       kernel_scores = []
