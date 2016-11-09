@@ -17,6 +17,7 @@ import glob
 from cheml import datasets
 
 data_list = [
+   datasets.load_HF2(),
    datasets.load_HF3(large=True),
    datasets.load_HF4(large=True),
    datasets.load_HF5(large=True),
@@ -40,15 +41,17 @@ for i in range(len(data_list)):
     data = data_list[i]
     E = np.array(data['E'])
     cv = ShuffleSplit(len(E), n_iter=10, test_size=.1, random_state=42)
-    scores = qtl.krrScore(data, 
-               kernels = 'laplacian',
-               gammas = gammas,
-               alphas = alphas,
-               n_samples = n_samples_list,
-               cv = cv,
-               descriptors = descriptors,
-               report=True,
-             )
+    scores, keys = qtl.krrScore(
+        data, 
+        kernels = 'laplacian',
+        gammas = gammas,
+        alphas = alphas,
+        n_samples = n_samples_list,
+        cv = cv,
+        descriptors = descriptors,
+        report=True,
+        return_key = True,
+    )
     kr_all_scores.append(scores)
 
     # step-wise backup
@@ -57,12 +60,13 @@ for i in range(len(data_list)):
         np.savez('HFn_krr_score.npz',
                  score = tmp,
                  n_samples = n_samples_list,
-                 gammas = gammas)
+                 gammas = gammas,
+                 keys = keys)
     except Exception as e:
         print("save attempt failed with err: %s" % str(e))
 
 kr_all_scores = np.stack(kr_all_scores)
-np.savez('st_scores_krr_HFn_lps.npz',
+np.savez('HFn_krr_score.npz',
          score = kr_all_scores,
          n_samples = n_samples_list,
          gammas = gammas)
