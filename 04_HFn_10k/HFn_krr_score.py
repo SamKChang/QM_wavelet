@@ -54,7 +54,7 @@ for i in range(len(data_list)):
     # step-wise backup
     try:
         tmp = np.stack(kr_all_scores)
-        np.savez('st_scores_krr_HFn_lps.npz',
+        np.savez('HFn_krr_score.npz',
                  score = tmp,
                  n_samples = n_samples_list,
                  gammas = gammas)
