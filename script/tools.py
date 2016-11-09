@@ -195,7 +195,7 @@ def krrScore(data,
               print(" best score:", np.min(np.abs(scores)), "\n")
    
   if report:           
-    print("final format:", output_key)
+    print("final format:", output_key.keys())
   if return_key:
     return np.squeeze(-np.array(all_scores)), output_key
   else:
