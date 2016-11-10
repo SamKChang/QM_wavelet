@@ -42,7 +42,7 @@ def make_dirac_densities(x, z, grid_step=.01,
 
     grid_new = grid[np.newaxis, :]
     x_new = x[:,:,np.newaxis]
-    densities = make_gaussian_densities(grid_new, x_new[:1], z[:1], sigma=dirac_width)
+    densities = make_gaussian_densities(grid_new, x_new, z, sigma=dirac_width)
 
     return densities
 
@@ -88,7 +88,7 @@ def loadData(fname, batch = (1, 1), return_range = False, size = None):
 def getSignal_1d(data, padding=10, p_range = None, grid_step = 0.01, components = ['all', 'valence', 'core']):
     
     global make_dirac_densities, get_valence
-                
+
     val = get_valence(data['Z'])
     full = data['Z']
     cor = full - val
@@ -264,6 +264,29 @@ def stModel_1d(fname, batch = 1, signal_setting = {}, filter_setting = {}):
         data, p_range = loadData(fname, 
                                  batch = (batch, i), 
                                  return_range = True)
+        rho, x = getSignal_1d(data, p_range = p_range, **signal_setting)
+        wlt = getFilter_1d(rho, **filter_setting)
+        st_1st = stCoefs_1d(rho, wlt)
+        st_2nd = stCoefs_1d(st_1st, wlt, 
+                            second_layer=True, 
+                            parallel=True)
+        chunk = regressionMatrix(st_1st, st_2nd, normalize = False)
+        st_matrix_chunks.append(chunk)
+        E.extend(data['E'])
+        del data, rho, wlt, st_1st, st_2nd
+    st_matrix = np.vstack(st_matrix_chunks)
+    norm = np.sqrt(np.sum(st_matrix ** 2, axis = -1))
+    return np.vstack(st_matrix_chunks), E
+
+def stModel_1d_testset(fname_train, fname_test, batch=1, signal_setting = {}, filter_setting = {}):
+    st_matrix_chunks = []
+    E = []
+    for i in range(1, batch+1):
+        print("processing %d out of %d" % (i, batch))
+        _, p_range = loadData(fname_train, 
+            batch = (batch, i), 
+            return_range = True)
+        data = loadData(fname_test, batch = (batch, i))
         rho, x = getSignal_1d(data, p_range = p_range, **signal_setting)
         wlt = getFilter_1d(rho, **filter_setting)
         st_1st = stCoefs_1d(rho, wlt)
