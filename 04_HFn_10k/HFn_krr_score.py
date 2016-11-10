@@ -17,7 +17,7 @@ import glob
 from cheml import datasets
 
 data_list = [
-   datasets.load_HF2(),
+   datasets.load_HF2(large=True),
    datasets.load_HF3(large=True),
    datasets.load_HF4(large=True),
    datasets.load_HF5(large=True),
@@ -32,7 +32,8 @@ descriptors = [
 
 #gammas = [.01, .02, .05, .1, .2, .5, 1]
 #gammas = [1E-12, 1E-9, 1E-6, 1E-3, 1E-1]
-gammas = [1E-8, 1E-4, 1E-1]
+#gammas = [1E-8, 1E-4, 1E-1]
+gammas = [1E-6, 1E-5, 1E-4, 1E-3]
 alphas = [1e-11]
 n_samples_list = list(range(10, 100, 10)) + list(range(100, 1000, 100)) + list(range(1000, 3000, 200)) + list(range(3000, 5000, 500)) + list(range(5000, 7500, 1000))
 
